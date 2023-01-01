@@ -1,3 +1,5 @@
+`ifndef ROB
+`define ROB
 `include"define.v"
 module ROB(
     //control signals
@@ -508,3 +510,4 @@ always @(posedge lsb_broadcast) begin//lsb广播的是lsb load得到的数据
     lsb_need_update <= `TRUE;
 end
 endmodule
+`endif

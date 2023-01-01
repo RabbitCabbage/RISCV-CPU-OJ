@@ -1,3 +1,5 @@
+`ifndef Decoder
+`define Decoder
 `include "define.v"
 
 // get instructions from if, 
@@ -332,3 +334,4 @@ always @(posedge clk) begin
     end
 end
 endmodule
+`endif

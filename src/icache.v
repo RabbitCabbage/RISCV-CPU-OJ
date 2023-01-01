@@ -1,3 +1,5 @@
+`ifndef ICache
+`define ICache
 `include "define.v"
 
 //从mem中预取指令，然后按照pc把指令取给IF
@@ -71,3 +73,4 @@ integer i;
     end
   end
 endmodule
+`endif

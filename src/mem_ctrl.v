@@ -1,3 +1,5 @@
+`ifndef MemCtrl
+`define MemCtrl
 `include "define.v"
 
 module MemCtrl (
@@ -318,3 +320,4 @@ always @(posedge clk) begin
     end
 end
 endmodule
+`endif

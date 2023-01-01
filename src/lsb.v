@@ -1,3 +1,5 @@
+`ifndef LSB
+`define LSB
 `include "define.v"
 `timescale 1ps/1ps
 module LSB(
@@ -315,3 +317,4 @@ always @(posedge alu_broadcast,rob_broadcast) begin
     end
 end
 endmodule
+`endif

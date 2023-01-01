@@ -1,3 +1,5 @@
+`ifndef RS
+`define RS
 `include "define.v"
 module RS(
     //control signals
@@ -247,3 +249,4 @@ always @(posedge rob_broadcast) begin
         end
 end
 endmodule
+`endif

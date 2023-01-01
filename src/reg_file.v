@@ -1,3 +1,5 @@
+`ifndef RegFile
+`define RegFile
 `include "define.v"
 module RegFile(
     //control signals
@@ -87,3 +89,4 @@ always @(posedge decoder_success)begin
                 end
 end
 endmodule
+`endif

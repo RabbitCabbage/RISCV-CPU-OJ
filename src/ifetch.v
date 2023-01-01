@@ -1,3 +1,5 @@
+`ifndef IF
+`define IF
 `include "define.v"
 module IF(
     input wire clk,
@@ -103,3 +105,4 @@ always @(posedge clk) begin
     end
 
 endmodule
+`endif

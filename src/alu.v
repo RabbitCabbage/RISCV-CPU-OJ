@@ -1,3 +1,5 @@
+`ifndef ALU
+`define ALU
 `include "define.v"
 
 module ALU(
@@ -98,3 +100,4 @@ always @(posedge clk) begin
     end
 end
 endmodule
+`endif

@@ -1,3 +1,5 @@
+`ifndef Predictor
+`define Predictor
 `include "define.v"
 `timescale 1ns/1ns
 module Predictor(
@@ -67,3 +69,4 @@ always @(posedge clk) begin
     end
 end
 endmodule
+`endif
