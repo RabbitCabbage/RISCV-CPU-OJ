@@ -141,20 +141,47 @@ always @(posedge clk) begin
             end
             7'b0010011: begin
                 case(instr[`FUNC3])
-                    3'b000: op               <= `ADDI;
-                    3'b001: op               <= `SLLI;
-                    3'b010: op               <= `SLTI;
-                    3'b011: op               <= `SLTIU;
-                    3'b100: op               <= `XORI;
+                    3'b000:begin
+                         op               <= `ADDI;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
+                    3'b001:begin
+                         op               <= `SLLI;
+                         to_rs_imm                    <= {26'b0,instr[25:20]};
+                    end
+                    3'b010:begin
+                         op               <= `SLTI;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
+                    3'b011:begin
+                         op               <= `SLTIU;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
+                    3'b100:begin
+                         op               <= `XORI;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
                     3'b101: begin
                         case(instr[`FUNC7])
-                            7'b0000000: op   <= `SRLI;
-                            7'b0100000: op   <= `SRAI;
+                            7'b0000000:begin
+                                 op   <= `SRLI;
+                                 to_rs_imm                    <= {26'b0,instr[25:20]};
+                            end
+                            7'b0100000:begin
+                                 op   <= `SRAI;
+                                 to_rs_imm                    <= {26'b0,instr[25:20]};
+                            end
                             default:begin end
                         endcase
                     end
-                    3'b110: op               <= `ORI;
-                    3'b111: op               <= `ANDI;
+                    3'b110:begin
+                         op               <= `ORI;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
+                    3'b111:begin
+                         op               <= `ANDI;
+                         to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
+                    end
                     default:begin end
                 endcase
                 to_reg_rs1_index             <= instr[19:15];
@@ -165,7 +192,6 @@ always @(posedge clk) begin
                 //吧得到的结果传给rs
                 //to_rs_op                     <= op;
                 //to_rob_op                    <= op;
-                to_rs_imm                    <= {{21{instr[31]}},instr[30:20]};
                 //to_rs_rs1_value              <= rs1_value;
                 to_rs_rd_rename              <= rob_free_tag;
                 to_rob_destination_reg_index <= instr[11:7];

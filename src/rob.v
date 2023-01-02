@@ -108,7 +108,7 @@ reg lsb_need_update;
 // integer out_file;
 
 initial begin
-    // out_file <= $fopen("../tmp.txt","w");
+    // out_file <= $fopen("../test.txt","w");
     rob_full <= `FALSE;
     head <= 0;//定一个很特殊的初始状态
     next <= 0;

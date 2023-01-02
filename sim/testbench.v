@@ -24,5 +24,8 @@ initial begin
 
   $finish;
 end
-
+// initial begin
+//   $dumpfile("../test/test.vcd");
+//   $dumpvars(0,testbench);
+// end
 endmodule
