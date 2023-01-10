@@ -455,7 +455,7 @@ always @(posedge clk) begin
                 
            ready[head[3:0]] <= `FALSE;
            head <= (head + 1) % `ROBNOTRENAME;
-           occupied <= occupied - 1;
+           //occupied <= occupied - 1;
        end else begin
         enable_reg <=  `FALSE;
         rob_broadcast <= `FALSE;
@@ -484,7 +484,7 @@ always @(posedge clk) begin
            ready[lsb_update_rename[3:0]] <= `TRUE;
            lsb_need_update<=`FALSE;
        end
-       if(decoder_enable == `TRUE &&occupied!=16)begin
+       if(decoder_input_enable == `TRUE &&occupied!=16)begin
            pc[next] <= decoder_pc;
            destination_reg_index[next] <= decoder_destination_reg_index;
            op[next] <= decoder_op;
@@ -497,7 +497,16 @@ always @(posedge clk) begin
                is_store[next] <= `FALSE;
            end
            next <= next + 1;
-           occupied <= occupied + 1;
+           //occupied <= occupied + 1;
+        end
+        if(ready[head[3:0]]==`TRUE && occupied != 0 && rob_enable_lsb_write==`FALSE && rob_broadcast == `FALSE) begin
+            if(decoder_input_enable == `FALSE || occupied == 16) begin
+                occupied <= occupied - 1;
+            end
+        end else begin
+            if(decoder_input_enable == `TRUE && occupied != 16) begin
+                occupied <= occupied + 1;
+            end
         end
     end
 end

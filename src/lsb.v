@@ -74,7 +74,7 @@ reg [`DATALEN]      rs1_value[`LSBSIZE];
 reg [`DATALEN]      rs2_value[`LSBSIZE];
 reg [`ROBINDEX]     rs1_rename[`LSBSIZE];
 reg [`ROBINDEX]     rs2_rename[`LSBSIZE];
-reg                 store_instr_sent_to_rob[`LSBSIZE];//标记这个store是不是被送过去了
+reg                 [`LSBSIZE]store_instr_sent_to_rob;//标记这个store是不是被送过去了
 wire                 calculate_ready[`LSBSIZE];
 wire                 issue_ready[`LSBSIZE];
 
