@@ -290,20 +290,9 @@ always @(posedge decode_signal)begin
             occupied <= occupied + 1;
         end
 end
-always @(posedge alu_broadcast,rob_broadcast) begin
+always @(posedge rob_broadcast) begin
     if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
     for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
-            if(alu_broadcast== `TRUE) begin
-                if(alu_update_rename==rs1_rename[j]) begin
-                    rs1_value[j] <= alu_cbd_value;
-                    rs1_rename[j] <= `ROBNOTRENAME;
-                end
-                if(alu_update_rename==rs2_rename[j]) begin
-                    rs2_value[j] <= alu_cbd_value;
-                    rs2_rename[j] <= `ROBNOTRENAME;
-                end
-            end
-            if(rob_broadcast==`TRUE) begin
                 if(rob_update_rename==rs1_rename[j]) begin
                     rs1_value[j] <= rob_cbd_value;
                     rs1_rename[j] <= `ROBNOTRENAME;
@@ -313,6 +302,19 @@ always @(posedge alu_broadcast,rob_broadcast) begin
                     rs2_rename[j] <= `ROBNOTRENAME;
                 end
             end
+    end
+end
+always @(posedge alu_broadcast) begin
+    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
+    for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
+                if(alu_update_rename==rs1_rename[j]) begin
+                    rs1_value[j] <= alu_cbd_value;
+                    rs1_rename[j] <= `ROBNOTRENAME;
+                end
+                if(alu_update_rename==rs2_rename[j]) begin
+                    rs2_value[j] <= alu_cbd_value;
+                    rs2_rename[j] <= `ROBNOTRENAME;
+                end
         end
     end
 end

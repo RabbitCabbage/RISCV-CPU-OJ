@@ -484,10 +484,7 @@ always @(posedge clk) begin
            ready[lsb_update_rename[3:0]] <= `TRUE;
            lsb_need_update<=`FALSE;
        end
-    end
-end
-always @(posedge decoder_input_enable) begin
-    if(jump_wrong==`FALSE && occupied!=16 && rst==`FALSE &&rdy == `TRUE)begin
+       if(decoder_enable == `TRUE &&occupied!=16)begin
            pc[next] <= decoder_pc;
            destination_reg_index[next] <= decoder_destination_reg_index;
            op[next] <= decoder_op;
@@ -502,6 +499,7 @@ always @(posedge decoder_input_enable) begin
            next <= next + 1;
            occupied <= occupied + 1;
         end
+    end
 end
 always @(posedge alu_broadcast) begin
     alu_need_update <= `TRUE;  
