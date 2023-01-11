@@ -111,6 +111,7 @@ end
 integer i;
 integer debug_alu_not_busy;
 reg alu_busy;
+integer last_pc_from_decoder;
 always @(posedge clk) begin
     if(rst==`TRUE || jump_wrong==`TRUE) begin
         alu_enable                    <=  `FALSE;
@@ -120,6 +121,7 @@ always @(posedge clk) begin
         end
         alu_busy <= `FALSE;
         debug_alu_not_busy <= 0;
+        last_pc_from_decoder <= -1;
     end else if (rdy == `TRUE) begin
         // 如果在RS中又ready的index；
         // 发布到alu中进行计算
@@ -138,12 +140,13 @@ always @(posedge clk) begin
             alu_busy                  <= `FALSE;
         end
         //如果decode这边成功解码，并且有空位置，添加一条指令
-        if(decode_success==`TRUE && free_index!=`RSNOTFOUND &&decoder_enable==`TRUE) begin
+        if(decode_success==`TRUE && free_index!=`RSNOTFOUND &&decoder_enable==`TRUE && decode_pc != last_pc_from_decoder) begin
                 busy[free_index[3:0]]          <= `TRUE;
                 rd_rename[free_index[3:0]]     <= decode_rd_rename;
                 opcode[free_index[3:0]]        <= decode_op;
                 imm[free_index[3:0]]           <= decode_imm;
                 pc[free_index[3:0]]            <= decode_pc;
+                last_pc_from_decoder <= decode_pc;
             if(rob_broadcast==`TRUE)begin//防止broadcast的时间冲突造成更新不成功
                 if(rob_update_rename == decode_rs1_rename)begin
                     rs1_value[free_index[3:0]] <= rob_cbd_value;

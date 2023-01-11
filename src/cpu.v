@@ -63,6 +63,7 @@ wire memctrl_success_to_icache;
 wire [`INSTRLEN] if_instr_to_decoder;
 wire [`ADDR] if_pc_to_decoder;
 wire if_success_to_decoder;
+wire if_success_to_predictor;
 
 //decoder and rs
 wire [`DATALEN]decoder_rs1_value_to_rs;
@@ -262,7 +263,8 @@ IF if_
       .stall_IF        (stall_IF),
       .instr_to_decode (if_instr_to_decoder),
       .pc_to_decoder   (if_pc_to_decoder),
-      .IF_success      (if_success_to_decoder),
+      .if_success_to_decoder      (if_success_to_decoder),
+      .if_success_to_predictor(if_success_to_predictor),
       .instr_pc_to_predictor(if_instr_pc_to_predictor),
       .instr_to_predictor(if_instr_to_ask_for_prediction),
       .is_jump_instr   (predictor_is_jump_instr_to_if),
@@ -504,7 +506,7 @@ Predictor predictor_
       .clk                        (clk_in),
       .rst                        (rst_in),
       .rdy                        (rdy_in),
-      .if_success                 (if_success_to_decoder),
+      .if_success                 (if_success_to_predictor),
       .if_instr_to_ask_for_prediction(if_instr_to_ask_for_prediction),
       .if_instr_pc_itself         (if_instr_pc_to_predictor),
       .rob_enable_predictor       (rob_enable_predictor),

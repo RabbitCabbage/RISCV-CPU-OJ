@@ -61,7 +61,7 @@ module ROB(
     output reg [`ROBINDEX] rob_update_rename,
     output reg [`DATALEN] rob_cbd_value,
 
-    output reg rob_full,
+    output wire rob_full,
     output reg jump_wrong,
     output reg [`ADDR] jumping_pc,
 
@@ -70,6 +70,7 @@ module ROB(
     output reg [`PREDICTORINDEX] to_predictor_pc,
     input wire ifetch_jump_change_success
 );
+integer last_pc_from_decoder;
 reg [`ADDR] pc[`ROBSIZE];
 reg [`DATALEN] rd_value[`ROBSIZE];
 reg [`ADDR] destination_mem_addr[`ROBSIZE];
@@ -92,6 +93,7 @@ assign to_decoder_rs2_value = rd_value[decoder_fetch_rs2_index[3:0]];
 assign to_decoder_rs1_ready = ready[decoder_fetch_rs1_index[3:0]];
 assign to_decoder_rs2_ready = ready[decoder_fetch_rs2_index[3:0]];
 assign rob_free_tag = (rob_full==`FALSE)? {1'b0,next}: 16;
+assign rob_full = (head==next && occupied == 16); 
 
 integer i;
 integer debug_alu_update;
@@ -109,7 +111,8 @@ reg lsb_need_update;
 
 initial begin
     // out_file <= $fopen("../test.txt","w");
-    rob_full <= `FALSE;
+    last_pc_from_decoder <= -1;
+    // rob_full <= `FALSE;
     head <= 0;//定一个很特殊的初始状态
     next <= 0;
     debug_alu_update <= 0;
@@ -142,6 +145,7 @@ always @(posedge clk) begin
         if (ifetch_jump_change_success == `TRUE) begin
             jump_wrong <= `FALSE;
         end
+        last_pc_from_decoder <= -1;
         //jump wrong 的时候这些信息得记下来，因为指令还得执行，不能赋成null
         // to_reg_rd <= `NULL5;
         // enable_reg <=  `FALSE;
@@ -154,7 +158,7 @@ always @(posedge clk) begin
         //jumping_pc <= `NULL32;
     end else if(rdy == `TRUE && jump_wrong == `FALSE) begin
         //commit the first instr;
-        rob_full = (next == head && occupied == 16);
+        // rob_full = (next == head && occupied == 16);
        if(ready[head[3:0]]==`TRUE && occupied != 0 && rob_enable_lsb_write==`FALSE && rob_broadcast == `FALSE) begin//同时要检查这个rob不空
             debug_rob_commit <= debug_rob_commit + 1;
            // $write(debug_rob_commit,"\n");
@@ -222,7 +226,7 @@ always @(posedge clk) begin
                     rob_update_rename <= {1'b0,head[3:0]};
                end
            endcase
-                // case(op[head[3:0]])
+            // case(op[head[3:0]])
                 //     `LB: begin
                 //         $fdisplay(out_file,"%h\tlb\t%d\t%d",instr[head[3:0]],destination_reg_index[head[3:0]],rd_value[head[3:0]]);
                 //     end
@@ -484,8 +488,9 @@ always @(posedge clk) begin
            ready[lsb_update_rename[3:0]] <= `TRUE;
            lsb_need_update<=`FALSE;
        end
-       if(decoder_input_enable == `TRUE &&occupied!=16)begin
+       if(decoder_input_enable == `TRUE &&occupied!=16 && last_pc_from_decoder != decoder_pc)begin
            pc[next] <= decoder_pc;
+           last_pc_from_decoder <= decoder_pc;
            destination_reg_index[next] <= decoder_destination_reg_index;
            op[next] <= decoder_op;
            instr[next] <= decoder_instr;
@@ -500,11 +505,11 @@ always @(posedge clk) begin
            //occupied <= occupied + 1;
         end
         if(ready[head[3:0]]==`TRUE && occupied != 0 && rob_enable_lsb_write==`FALSE && rob_broadcast == `FALSE) begin
-            if(decoder_input_enable == `FALSE || occupied == 16) begin
+            if(decoder_input_enable == `FALSE || occupied == 16||last_pc_from_decoder== decoder_pc) begin//那么就不能放进去
                 occupied <= occupied - 1;
             end
         end else begin
-            if(decoder_input_enable == `TRUE && occupied != 16) begin
+            if(decoder_input_enable == `TRUE &&occupied!=16 && last_pc_from_decoder != decoder_pc) begin
                 occupied <= occupied + 1;
             end
         end
