@@ -144,6 +144,30 @@ always @(posedge clk) begin
         end
     end else if(rdy == `TRUE && jump_wrong == `FALSE)begin
         //decoder进入lsb的时间晚了一个周期，并且有occupied计算冲突
+            if(rob_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
+            for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
+                        if(rob_update_rename==rs1_rename[j]) begin
+                            rs1_value[j] <= rob_cbd_value;
+                            rs1_rename[j] <= `ROBNOTRENAME;
+                        end
+                        if(rob_update_rename==rs2_rename[j]) begin
+                            rs2_value[j] <= rob_cbd_value;
+                            rs2_rename[j] <= `ROBNOTRENAME;
+                        end
+                    end
+            end
+            if(alu_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
+            for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
+                        if(alu_update_rename==rs1_rename[j]) begin
+                            rs1_value[j] <= alu_cbd_value;
+                            rs1_rename[j] <= `ROBNOTRENAME;
+                        end
+                        if(alu_update_rename==rs2_rename[j]) begin
+                            rs2_value[j] <= alu_cbd_value;
+                            rs2_rename[j] <= `ROBNOTRENAME;
+                        end
+                end
+            end
             occupied <= occupied + ((occupied != 16 && decoder_enable==`TRUE)?1:0)-((mem_load_success==`TRUE)?1:0)-((mem_store_success == `TRUE)?1:0);
             if(occupied != 16 && decoder_enable==`TRUE) begin
                 busy[next] <= `TRUE;
@@ -287,33 +311,5 @@ always @(posedge clk) begin
     end
 end
 
-always @(posedge rob_broadcast) begin
-    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
-    for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
-                if(rob_update_rename==rs1_rename[j]) begin
-                    rs1_value[j] <= rob_cbd_value;
-                    rs1_rename[j] <= `ROBNOTRENAME;
-                end
-                if(rob_update_rename==rs2_rename[j]) begin
-                    rs2_value[j] <= rob_cbd_value;
-                    rs2_rename[j] <= `ROBNOTRENAME;
-                end
-            end
-    end
-end
-always @(posedge alu_broadcast) begin
-    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
-    for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
-                if(alu_update_rename==rs1_rename[j]) begin
-                    rs1_value[j] <= alu_cbd_value;
-                    rs1_rename[j] <= `ROBNOTRENAME;
-                end
-                if(alu_update_rename==rs2_rename[j]) begin
-                    rs2_value[j] <= alu_cbd_value;
-                    rs2_rename[j] <= `ROBNOTRENAME;
-                end
-        end
-    end
-end
 endmodule
 `endif

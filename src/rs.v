@@ -125,6 +125,50 @@ always @(posedge clk) begin
     end else if (rdy == `TRUE) begin
         // 如果在RS中又ready的index；
         // 发布到alu中进行计算
+        if(alu_broadcast == `TRUE && jump_wrong==`FALSE)begin
+                    alu_busy <= `FALSE;
+                    debug_alu_not_busy <= debug_alu_not_busy + 1;
+                    for(i=0;i<16;i=i+1) begin
+                        if(busy[i]==`TRUE) begin
+                            if(rs1_rename[i]==alu_update_rename) begin
+                                //说明这个要被替换掉了
+                                rs1_rename[i] <= `ROBNOTRENAME;
+                                rs1_value[i]  <= alu_cbd_value;
+                            end else if(rs2_rename[i]==alu_update_rename) begin
+                                rs2_rename[i] <= `ROBNOTRENAME;
+                                rs2_value[i]  <= alu_cbd_value;
+                            end
+                        end
+                    end
+        end
+        if(lsb_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE) begin
+                for(i=0;i<16;i=i+1) begin
+                    if(busy[i]==`TRUE) begin
+                        if(rs1_rename[i]==lsb_update_rename) begin
+                            rs1_rename[i] <= `ROBNOTRENAME;
+                            rs1_value[i]  = lsb_cbd_value;
+                        end else if(rs2_rename[i]==lsb_update_rename) begin
+                            rs2_rename[i] <= `ROBNOTRENAME;
+                            rs2_value[i]  <= lsb_cbd_value;
+                        end
+                    end
+                end
+        end
+        if(rob_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
+                for(i=0;i<16;i=i+1) begin
+                        if(busy[i]) begin
+                            if(rs1_rename[i]==rob_update_rename) begin
+                                rs1_rename[i] <= `ROBNOTRENAME;
+                                rs1_value[i]  <= rob_cbd_value;
+                            end
+                            if(rs2_rename[i]==rob_update_rename) begin
+                                rs2_rename[i] <= `ROBNOTRENAME;
+                                rs2_value[i]  <= rob_cbd_value;
+                            end
+                    end
+                end
+            end
+    
         if(issue_index != `RSNOTFOUND && alu_busy == `FALSE) begin
             alu_enable                <= `TRUE;
             to_alu_op                 <= opcode[issue_index[3:0]];
@@ -201,55 +245,6 @@ always @(posedge clk) begin
         //monitor alu lsb and rob 
     end
 end
-end
-always @(posedge alu_broadcast) begin
-    if(jump_wrong==`FALSE && rdy == `TRUE && rst == `FALSE)begin
-            alu_busy <= `FALSE;
-            debug_alu_not_busy <= debug_alu_not_busy + 1;
-            for(i=0;i<16;i=i+1) begin
-                if(busy[i]==`TRUE) begin
-                    if(rs1_rename[i]==alu_update_rename) begin
-                        //说明这个要被替换掉了
-                        rs1_rename[i] <= `ROBNOTRENAME;
-                        rs1_value[i]  <= alu_cbd_value;
-                    end else if(rs2_rename[i]==alu_update_rename) begin
-                        rs2_rename[i] <= `ROBNOTRENAME;
-                        rs2_value[i]  <= alu_cbd_value;
-                    end
-                end
-            end
-    end
-end
-always @(posedge lsb_broadcast) begin
-    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE) begin
-            for(i=0;i<16;i=i+1) begin
-                if(busy[i]==`TRUE) begin
-                    if(rs1_rename[i]==lsb_update_rename) begin
-                        rs1_rename[i] <= `ROBNOTRENAME;
-                        rs1_value[i]  = lsb_cbd_value;
-                    end else if(rs2_rename[i]==lsb_update_rename) begin
-                        rs2_rename[i] <= `ROBNOTRENAME;
-                        rs2_value[i]  <= lsb_cbd_value;
-                    end
-                end
-            end
-    end
-end
-always @(posedge rob_broadcast) begin
-    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
-            for(i=0;i<16;i=i+1) begin
-                    if(busy[i]) begin
-                        if(rs1_rename[i]==rob_update_rename) begin
-                            rs1_rename[i] <= `ROBNOTRENAME;
-                            rs1_value[i]  <= rob_cbd_value;
-                        end
-                        if(rs2_rename[i]==rob_update_rename) begin
-                            rs2_rename[i] <= `ROBNOTRENAME;
-                            rs2_value[i]  <= rob_cbd_value;
-                        end
-                end
-            end
-        end
 end
 endmodule
 `endif
