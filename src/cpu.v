@@ -45,6 +45,7 @@ wire rob_full;
 wire lsb_full;
 wire stall_IF;
 wire stall_decoder;
+wire [`ROBINDEX] rob_head;
 
 
 //icache and ifetch
@@ -247,7 +248,8 @@ ROB rob_
       .to_predictor_enable           (rob_enable_predictor),//通知predictor要告诉它情况了
       .to_predictor_jump             (rob_real_jump_to_predictor),//告诉predictor真实的情况
       .to_predictor_pc               (rob_branch_instr_pc_itself),//输出跳错的指令本身的pc
-      .ifetch_jump_change_success    (ifetch_jump_change_success_to_rob)    
+      .ifetch_jump_change_success    (ifetch_jump_change_success_to_rob),
+      .rob_head(rob_head)    
     );
 IF if_
     (
@@ -501,7 +503,8 @@ LSB lsb_
       .lsb_full           (lsb_full),
       .lsb_destination_addr_to_rob(lsb_calculated_destination_addr_to_rob),
       .lsb_calculated_addr_signal (lsb_enable_calculated_addr_to_rob),
-      .lsb_rename_to_rob_for_the_calculated_instr          (lsb_calculated_instr_rd_rename_to_rob)
+      .lsb_rename_to_rob_for_the_calculated_instr          (lsb_calculated_instr_rd_rename_to_rob),
+      .rob_head(rob_head)
       );
 Predictor predictor_
     (

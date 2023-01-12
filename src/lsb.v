@@ -61,7 +61,8 @@ module LSB(
     output reg lsb_broadcast,
     output reg [`DATALEN] lsb_cbd_value,
     output reg [`ROBINDEX] lsb_update_rename,
-    output reg lsb_full
+    output reg lsb_full,
+    input wire[`ROBINDEX] rob_head
 );
 reg                 busy[`LSBSIZE];
 reg [`ADDR]         pc[`LSBSIZE];
@@ -201,7 +202,7 @@ always @(posedge clk) begin
         if(issue_ready[head[3:0]] == `TRUE  && occupied != 0) begin
             case(op[head[3:0]])
                 `SB,`SH,`SW: begin
-                // lsb_write_signal <= `TRUE;
+                    // lsb_write_signal <= `TRUE;
                     // lsb_read_signal <= `FALSE;
                     // to_mem_addr <= destination_mem_addr[head[3:0]];
                     // to_mem_data <= rs2_value[head[3:0]];
@@ -209,7 +210,7 @@ always @(posedge clk) begin
                     // addr_ready[head[3:0]] <= `FALSE;
                     // lsb_update_rename <= rob_index[head[3:0]];
                     if(rob_enable_lsb_write==`TRUE && lsb_write_signal == `FALSE) begin
-                    // case(op[head[3:0]])
+                        // case(op[head[3:0]])
                         //     `SB: begin
                         //         $display(out_file,"%h\tsb\t%d\t%d",commit_store_instr,rs2_value[head[3:0]],destination_mem_addr[head[3:0]]);
                         //     end
@@ -252,24 +253,26 @@ always @(posedge clk) begin
                 end
                 `LB,`LBU,`LH,`LHU,`LW: begin
                     if(lsb_read_signal == `FALSE)begin
-                        busy[head[3:0]] <= `FALSE;
-                        addr_ready[head[3:0]] <= `FALSE;
-                        lsb_write_signal <= `FALSE;
-                        lsb_read_signal <= `TRUE;
-                        lsb_update_rename <= rob_index[head[3:0]];
-                        to_mem_addr <= destination_mem_addr[head[3:0]];
-                        lsb_store_instr_ready <= `FALSE;
-                        case(op[head[3:0]])
-                            `LB,`LBU: begin 
-                                requiring_length <= `REQUIRE8; 
-                            end
-                            `LH,`LHU: begin 
-                                requiring_length <= `REQUIRE16;
-                            end
-                            default: begin
-                                requiring_length <= `REQUIRE32;
-                            end
-                        endcase
+                        if(destination_mem_addr[head[3:0]]!=196608||(destination_mem_addr[head[3:0]]==196608 && rob_index[head[3:0]] == rob_head)) begin
+                            busy[head[3:0]] <= `FALSE;
+                            addr_ready[head[3:0]] <= `FALSE;
+                            lsb_write_signal <= `FALSE;
+                            lsb_read_signal <= `TRUE;
+                            lsb_update_rename <= rob_index[head[3:0]];
+                            to_mem_addr <= destination_mem_addr[head[3:0]];
+                            lsb_store_instr_ready <= `FALSE;
+                            case(op[head[3:0]])
+                                `LB,`LBU: begin 
+                                    requiring_length <= `REQUIRE8; 
+                                end
+                                `LH,`LHU: begin 
+                                    requiring_length <= `REQUIRE16;
+                                end
+                                default: begin
+                                    requiring_length <= `REQUIRE32;
+                                end
+                            endcase
+                        end
                     end
                 end
                 default: begin 
