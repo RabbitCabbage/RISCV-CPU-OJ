@@ -51,6 +51,7 @@ reg [`ADDR] tmp_check_new_addr;
 reg [`BYTELEN]debug_byte_read;
 integer debug_enable_mem;
 integer debug_wr_change;
+integer count_after_finish;
 always @(posedge clk) begin
     if(rst == `TRUE || jump_wrong==`TRUE) begin
         working <= `FALSE;
@@ -60,6 +61,7 @@ always @(posedge clk) begin
         lsb_store_success <= `FALSE;
          new_addr_assigned_to_start_addr <= `FALSE;
         icache_success <= `FALSE;//这里只有不成功后面才不会有隐患，要不然拿到if说成功了if就会给predictor，就会传回jump_pc让if出错
+        count_after_finish <= 0;
     end else if (rdy == `TRUE) begin
         // There is an instruction on operation so it cannot begin a new instruction.
         tmp_check_new_addr = new_addr;
@@ -133,17 +135,34 @@ always @(posedge clk) begin
                     end
                 end else begin //I/O write, that is lsb wirte into memory
                 //Store word/half word/byte
-                    read_write                       <= `WRITE;
-                    debug_wr_change <= 1;
                     if(finished == requiring_len - 3'b001) begin
-                        icache_success               <= `FALSE;
-                        lsb_store_success                  <= `TRUE;
-                        lsb_load_success <= `FALSE;
-                        working                      <= `FALSE;
-                        //mem_addr                     <= start_addr;
-                        mem_enable                   <= `FALSE;
-                        mem_byte_write               <= `NULL8;
-                        ultimate_data                <= `NULL32;
+                        if(count_after_finish == 0) begin
+                            icache_success <= `FALSE;
+                            lsb_store_success <= `FALSE;
+                            lsb_load_success <= `FALSE;
+                            working <= `TRUE;
+                            mem_enable <= `FALSE;
+                            mem_byte_write <= `NULL8;
+                            count_after_finish <= 1;
+                        end else if(count_after_finish == 1) begin
+                            icache_success <= `FALSE;
+                            lsb_store_success <= `FALSE;
+                            lsb_load_success <= `FALSE;
+                            working <= `TRUE;
+                            mem_enable <= `FALSE;
+                            mem_byte_write <= `NULL8;
+                            count_after_finish <= 2;
+                        end else if(count_after_finish == 2)begin
+                            icache_success               <= `FALSE;
+                            lsb_store_success                  <= `TRUE;
+                            lsb_load_success <= `FALSE;
+                            working                      <= `FALSE;
+                            //mem_addr                     <= start_addr;
+                            mem_enable                   <= `FALSE;
+                            mem_byte_write               <= `NULL8;
+                            ultimate_data                <= `NULL32;
+                            count_after_finish <= 0;
+                        end
                     end else begin
                         lsb_store_success            <= `FALSE;
                         case(finished)
