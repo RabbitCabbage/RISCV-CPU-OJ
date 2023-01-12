@@ -201,7 +201,7 @@ always @(posedge clk) begin
         if(issue_ready[head[3:0]] == `TRUE  && occupied != 0) begin
             case(op[head[3:0]])
                 `SB,`SH,`SW: begin
-                    // lsb_write_signal <= `TRUE;
+                // lsb_write_signal <= `TRUE;
                     // lsb_read_signal <= `FALSE;
                     // to_mem_addr <= destination_mem_addr[head[3:0]];
                     // to_mem_data <= rs2_value[head[3:0]];
@@ -209,7 +209,7 @@ always @(posedge clk) begin
                     // addr_ready[head[3:0]] <= `FALSE;
                     // lsb_update_rename <= rob_index[head[3:0]];
                     if(rob_enable_lsb_write==`TRUE && lsb_write_signal == `FALSE) begin
-                        // case(op[head[3:0]])
+                    // case(op[head[3:0]])
                         //     `SB: begin
                         //         $display(out_file,"%h\tsb\t%d\t%d",commit_store_instr,rs2_value[head[3:0]],destination_mem_addr[head[3:0]]);
                         //     end
