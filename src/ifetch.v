@@ -49,27 +49,24 @@ always @(posedge IF_success) begin
 end
 
 integer begin_flag;
-reg wait_flag;
+wire wait_flag;
+assign wait_flag = predictor_enable && wait_flag_drag_low;
+reg wait_flag_drag_low;
 integer debug_check_pc_change;
-always @(posedge predictor_enable) begin
-    if(rst == `FALSE && rdy == `TRUE)begin
-        wait_flag <= `TRUE;//目的是为了让predictor算出来的地址只被计算一次，不会重复计算
-    end
-end
 
 always @(posedge clk) begin
     if (rst == `TRUE) begin
         icache_enable <= `FALSE;
         pc <= `NULL32;
         begin_flag <= 0;
-        wait_flag <= `FALSE;
+        wait_flag_drag_low <= `FALSE;
     end else if(jump_wrong==`TRUE)begin
             pc <= jump_pc_from_rob;
             pc_to_fetch <= jump_pc_from_rob;
             debug_check_pc_change <= 0;
             ifetch_jump_change_success <= `TRUE;
             icache_enable <= `TRUE;// todo stall if
-            wait_flag <= `FALSE;
+            wait_flag_drag_low <= `FALSE;
             if_success_to_decoder <= `FALSE;
     end else if(rdy==`TRUE && stall_IF==`FALSE && jump_wrong == `FALSE)begin
             ifetch_jump_change_success <= `FALSE;
@@ -92,22 +89,26 @@ always @(posedge clk) begin
                         debug_check_pc_change <= 3;
                     end
                     icache_enable <= `TRUE;
-                    wait_flag <= `FALSE;//这之后就不会再计算一次了
+                    wait_flag_drag_low <= `FALSE;//这之后就不会再计算一次了
                 end else if(begin_flag == 0) begin
                     begin_flag <= 1;
                     icache_enable <= `TRUE;
                     pc_to_fetch <= pc;
                     debug_check_pc_change <= 5;
+                    wait_flag_drag_low <= `TRUE;
+                end else begin
+                    wait_flag_drag_low <= `TRUE;
                 end
             end else begin
+                wait_flag_drag_low <= `TRUE;
                 if(IF_success == `TRUE)begin//如果之前已经fetch成功了
                     pc_to_decoder <= pc;
                     instr_to_decode <= instr_fetched;
                     icache_enable <= `FALSE;
                 end
             end
-        end
     end
+end
 
 endmodule
 `endif

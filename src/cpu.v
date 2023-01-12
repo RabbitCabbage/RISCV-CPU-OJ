@@ -192,7 +192,7 @@ wire ifetch_jump_change_success_to_rob;
 //   assign rob_full = `FALSE;
 //   assign lsb_full = `FALSE;
 // end
-
+wire reg_finished_for_decoder;
 
 ROB rob_
     (
@@ -319,6 +319,7 @@ Decoder decoder_
       .reg_rs2_value                (reg_rs2_value_to_decoder),
       .reg_rs1_renamed                 (reg_rs1_renamed_to_decoder),
       .reg_rs2_renamed                 (reg_rs2_renamed_to_decoder),
+      .reg_finished_for_decoder        (reg_finished_for_decoder),
       .to_reg_rs1_index             (decoder_rs1_index_to_reg),
       .to_reg_rs2_index             (decoder_rs2_index_to_reg),
       .to_reg_rd_rename             (decoder_rd_rename_to_reg),
@@ -364,7 +365,8 @@ RegFile regfile_
       .rob_enable             (rob_enable_regfile),
       .rob_commit_index       (rob_rd_index_to_reg),
       .rob_commit_rename      (rob_rd_rename_to_reg),
-      .rob_commit_value       (rob_rd_value_to_reg)
+      .rob_commit_value       (rob_rd_value_to_reg),
+      .reg_finished_for_decoder(reg_finished_for_decoder)
     );
 // RAM ram_
 //   (
