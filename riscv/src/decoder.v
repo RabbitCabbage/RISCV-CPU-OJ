@@ -44,7 +44,6 @@ module Decoder(
     input wire [`DATALEN] reg_rs2_value,
     input wire reg_rs1_renamed,
     input wire reg_rs2_renamed, 
-    input wire reg_finished_for_decoder,
     output reg [`REGINDEX] to_reg_rs1_index,
     output reg [`REGINDEX] to_reg_rs2_index,
     output reg [`ROBINDEX] to_reg_rd_rename,
@@ -65,8 +64,8 @@ module Decoder(
     output wire [`OPLEN] to_rob_op,
     output reg [`REGINDEX] to_rob_destination_reg_index,
     output reg instr_need_fill_rd,
-    output wire enable_rs,
-    output wire enable_lsb,
+    output reg enable_rs,
+    output reg enable_lsb,
     input wire jump_wrong
 );
 //todo 把freetag赋值的时间点明显不对
@@ -101,15 +100,11 @@ assign to_lsb_rs2_rename                            = (to_reg_rs2_index==0?`ROBN
 assign to_rob_op = op;
 assign to_rs_op = op;
 assign to_lsb_op = op;
-reg enable_lsb_decoded;
-reg enable_rs_decoded;
-assign enable_lsb = enable_lsb_decoded && reg_finished_for_decoder;
-assign enable_rs = enable_rs_decoded && reg_finished_for_decoder;
 always @(posedge clk) begin
     //rst has nothing on this module, because this module has nothing stored in itself.
     if(rst == `TRUE || jump_wrong == `TRUE || stall_decoder==`TRUE) begin
-        enable_lsb_decoded <= `FALSE;
-        enable_rs_decoded <= `FALSE;
+        enable_lsb <= `FALSE;
+        enable_rs <= `FALSE;
         decode_success <= `FALSE;
     end else if(rdy==`TRUE && IF_success==`TRUE) begin
         decode_success                       <= `TRUE;
@@ -141,8 +136,8 @@ always @(posedge clk) begin
                 to_rob_destination_reg_index <= instr[11:7];
                 instr_need_fill_rd             <= `TRUE;
                 to_reg_rd_index                <= instr[11:7];
-                enable_lsb_decoded                     <= `TRUE;
-                enable_rs_decoded                      <= `FALSE;
+                enable_lsb                     <= `TRUE;
+                enable_rs                      <= `FALSE;
             end
             7'b0010011: begin
                 case(instr[`FUNC3])
@@ -202,8 +197,8 @@ always @(posedge clk) begin
                 to_rob_destination_reg_index <= instr[11:7];
                 instr_need_fill_rd             <= `TRUE;
                 to_reg_rd_index                <= instr[11:7];
-                enable_lsb_decoded                     <= `FALSE;
-                enable_rs_decoded                    <= `TRUE;
+                enable_lsb                     <= `FALSE;
+                enable_rs                    <= `TRUE;
             end
             7'b0010111: begin
                 op                           <= `AUIPC;
@@ -218,8 +213,8 @@ always @(posedge clk) begin
                 to_reg_rd_index                <= instr[11:7];
                 to_reg_need_rs1              <= `FALSE;
                 to_reg_need_rs2              <= `FALSE;
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
             end
             7'b0100011: begin
                 case(instr[`FUNC3])
@@ -239,8 +234,8 @@ always @(posedge clk) begin
                 //to_lsb_rs1_value             <= rs1_value;
                 //to_lsb_rs2_value             <= rs2_value;
                 instr_need_fill_rd             <= `FALSE;
-                enable_lsb_decoded                     <= `TRUE;
-                enable_rs_decoded                      <= `FALSE;
+                enable_lsb                     <= `TRUE;
+                enable_rs                      <= `FALSE;
                 to_lsb_rd_rename               <= rob_free_tag;
             end
             7'b0110011: begin
@@ -279,8 +274,8 @@ always @(posedge clk) begin
                 to_rob_destination_reg_index <= instr[11:7];
                 instr_need_fill_rd             <= `TRUE;
                 to_reg_rd_index                <= instr[11:7];
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
             end
             7'b0110111: begin
                 op                           <= `LUI;
@@ -295,8 +290,8 @@ always @(posedge clk) begin
                 to_reg_rd_index                <= instr[11:7];
                 to_reg_need_rs1              <= `FALSE;
                 to_reg_need_rs2              <= `FALSE;
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
             end
             7'b1100011: begin
                 case(instr[`FUNC3])
@@ -319,8 +314,8 @@ always @(posedge clk) begin
                 //to_rs_op                     <= op;
                 //to_rob_op                    <= op;
                 instr_need_fill_rd             <= `FALSE;
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
                 to_rs_rd_rename              <= rob_free_tag;
             end
             7'b1100111: begin
@@ -338,8 +333,8 @@ always @(posedge clk) begin
                 to_rob_destination_reg_index <= instr[11:7];
                 instr_need_fill_rd             <= `TRUE;
                 to_reg_rd_index                <= instr[11:7];
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
             end
             7'b1101111: begin
                 op                           <= `JAL;
@@ -354,8 +349,8 @@ always @(posedge clk) begin
                 to_reg_rd_index                <= instr[11:7];
                 to_reg_need_rs1              <= `FALSE;
                 to_reg_need_rs2              <= `FALSE;
-                enable_rs_decoded                    <= `TRUE;
-                enable_lsb_decoded                   <= `FALSE;
+                enable_rs                    <= `TRUE;
+                enable_lsb                   <= `FALSE;
             end
             default:begin end
          endcase

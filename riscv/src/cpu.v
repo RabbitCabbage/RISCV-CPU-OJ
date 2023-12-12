@@ -45,7 +45,6 @@ wire rob_full;
 wire lsb_full;
 wire stall_IF;
 wire stall_decoder;
-wire [`ROBINDEX] rob_head;
 
 
 //icache and ifetch
@@ -64,7 +63,6 @@ wire memctrl_success_to_icache;
 wire [`INSTRLEN] if_instr_to_decoder;
 wire [`ADDR] if_pc_to_decoder;
 wire if_success_to_decoder;
-wire if_success_to_predictor;
 
 //decoder and rs
 wire [`DATALEN]decoder_rs1_value_to_rs;
@@ -193,14 +191,13 @@ wire ifetch_jump_change_success_to_rob;
 //   assign rob_full = `FALSE;
 //   assign lsb_full = `FALSE;
 // end
-wire reg_finished_for_decoder;
+
 
 ROB rob_
     (
       .clk                           (clk_in),
       .rdy                           (rdy_in),
       .rst                           (rst_in),
-      .io_buffer_full(io_buffer_full),
       .rob_enable_lsb_write          (rob_enable_lsb_write),
       .commit_store_instr            (rob_commit_store_instr_to_lsb),
       .to_lsb_value                  (rob_store_data_to_lsb),
@@ -249,8 +246,7 @@ ROB rob_
       .to_predictor_enable           (rob_enable_predictor),//通知predictor要告诉它情况了
       .to_predictor_jump             (rob_real_jump_to_predictor),//告诉predictor真实的情况
       .to_predictor_pc               (rob_branch_instr_pc_itself),//输出跳错的指令本身的pc
-      .ifetch_jump_change_success    (ifetch_jump_change_success_to_rob),
-      .rob_head(rob_head)    
+      .ifetch_jump_change_success    (ifetch_jump_change_success_to_rob)    
     );
 IF if_
     (
@@ -266,8 +262,7 @@ IF if_
       .stall_IF        (stall_IF),
       .instr_to_decode (if_instr_to_decoder),
       .pc_to_decoder   (if_pc_to_decoder),
-      .if_success_to_decoder      (if_success_to_decoder),
-      .if_success_to_predictor(if_success_to_predictor),
+      .IF_success      (if_success_to_decoder),
       .instr_pc_to_predictor(if_instr_pc_to_predictor),
       .instr_to_predictor(if_instr_to_ask_for_prediction),
       .is_jump_instr   (predictor_is_jump_instr_to_if),
@@ -322,7 +317,6 @@ Decoder decoder_
       .reg_rs2_value                (reg_rs2_value_to_decoder),
       .reg_rs1_renamed                 (reg_rs1_renamed_to_decoder),
       .reg_rs2_renamed                 (reg_rs2_renamed_to_decoder),
-      .reg_finished_for_decoder        (reg_finished_for_decoder),
       .to_reg_rs1_index             (decoder_rs1_index_to_reg),
       .to_reg_rs2_index             (decoder_rs2_index_to_reg),
       .to_reg_rd_rename             (decoder_rd_rename_to_reg),
@@ -368,8 +362,7 @@ RegFile regfile_
       .rob_enable             (rob_enable_regfile),
       .rob_commit_index       (rob_rd_index_to_reg),
       .rob_commit_rename      (rob_rd_rename_to_reg),
-      .rob_commit_value       (rob_rd_value_to_reg),
-      .reg_finished_for_decoder(reg_finished_for_decoder)
+      .rob_commit_value       (rob_rd_value_to_reg)
     );
 // RAM ram_
 //   (
@@ -464,7 +457,6 @@ LSB lsb_
       .rdy                (rdy_in),
       .rst                (rst_in),
       .jump_wrong         (jump_wrong),
-      .io_buffer_full     (io_buffer_full),
       .lsb_read_signal    (lsb_read_signal_to_memctrl),
       .lsb_write_signal   (lsb_write_signal_to_memctrl),
       .commit_store_instr (rob_commit_store_instr_to_lsb),
@@ -505,15 +497,14 @@ LSB lsb_
       .lsb_full           (lsb_full),
       .lsb_destination_addr_to_rob(lsb_calculated_destination_addr_to_rob),
       .lsb_calculated_addr_signal (lsb_enable_calculated_addr_to_rob),
-      .lsb_rename_to_rob_for_the_calculated_instr          (lsb_calculated_instr_rd_rename_to_rob),
-      .rob_head(rob_head)
+      .lsb_rename_to_rob_for_the_calculated_instr          (lsb_calculated_instr_rd_rename_to_rob)
       );
 Predictor predictor_
     (
       .clk                        (clk_in),
       .rst                        (rst_in),
       .rdy                        (rdy_in),
-      .if_success                 (if_success_to_predictor),
+      .if_success                 (if_success_to_decoder),
       .if_instr_to_ask_for_prediction(if_instr_to_ask_for_prediction),
       .if_instr_pc_itself         (if_instr_pc_to_predictor),
       .rob_enable_predictor       (rob_enable_predictor),

@@ -8,7 +8,6 @@ module LSB(
     input wire rdy,
     input wire rst,
     input wire jump_wrong,
-    input wire io_buffer_full,
     //to mem_ctrl 
     output reg lsb_read_signal,
     output reg lsb_write_signal,
@@ -62,8 +61,7 @@ module LSB(
     output reg lsb_broadcast,
     output reg [`DATALEN] lsb_cbd_value,
     output reg [`ROBINDEX] lsb_update_rename,
-    output reg lsb_full,
-    input wire[`ROBINDEX] rob_head
+    output reg lsb_full
 );
 reg                 busy[`LSBSIZE];
 reg [`ADDR]         pc[`LSBSIZE];
@@ -124,8 +122,9 @@ generate
     end
 endgenerate
 integer j;
-integer debug_head_change;
+integer out_file;
 initial begin
+    out_file = $fopen("../tmp.txt","w");
     lsb_full <= `FALSE;
 end
 //从decoder送过来是有顺序的，执行的时候也应该是有顺序的，因此每次只能执行最首的那个
@@ -145,61 +144,6 @@ always @(posedge clk) begin
             destination_mem_addr[j] <= `NULL32;
         end
     end else if(rdy == `TRUE && jump_wrong == `FALSE)begin
-        //decoder进入lsb的时间晚了一个周期，并且有occupied计算冲突
-            if(rob_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
-            for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
-                        if(rob_update_rename==rs1_rename[j]) begin
-                            rs1_value[j] <= rob_cbd_value;
-                            rs1_rename[j] <= `ROBNOTRENAME;
-                        end
-                        if(rob_update_rename==rs2_rename[j]) begin
-                            rs2_value[j] <= rob_cbd_value;
-                            rs2_rename[j] <= `ROBNOTRENAME;
-                        end
-                    end
-            end
-            if(alu_broadcast == `TRUE && jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
-            for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
-                        if(alu_update_rename==rs1_rename[j]) begin
-                            rs1_value[j] <= alu_cbd_value;
-                            rs1_rename[j] <= `ROBNOTRENAME;
-                        end
-                        if(alu_update_rename==rs2_rename[j]) begin
-                            rs2_value[j] <= alu_cbd_value;
-                            rs2_rename[j] <= `ROBNOTRENAME;
-                        end
-                end
-            end
-            occupied <= occupied + ((occupied != 16 && decoder_enable==`TRUE)?1:0)-((mem_load_success==`TRUE)?1:0)-((mem_store_success == `TRUE)?1:0);
-            if(occupied != 16 && decoder_enable==`TRUE) begin
-                busy[next] <= `TRUE;
-                rob_index[next] <= decoder_rd_rename;
-                store_instr_sent_to_rob[next] <= `FALSE;
-                if(alu_broadcast == `TRUE && alu_update_rename==decoder_rs1_rename)begin 
-                    rs1_rename[next] <= `ROBNOTRENAME; 
-                    rs1_value[next] <= alu_cbd_value;
-                end else if(rob_broadcast == `TRUE && rob_update_rename==decoder_rs1_rename)begin 
-                    rs1_rename[next] <= `ROBNOTRENAME; 
-                    rs1_value[next] <= rob_cbd_value;
-                end else begin
-                    rs1_rename[next] <= decoder_rs1_rename;
-                    rs1_value[next] <= decoder_rs1_value;
-                end
-                if(alu_broadcast == `TRUE && alu_update_rename==decoder_rs2_rename)begin 
-                    rs2_rename[next] <= `ROBNOTRENAME; 
-                    rs2_value[next] <= alu_cbd_value;
-                end else if(rob_broadcast == `TRUE && rob_update_rename==decoder_rs2_rename)begin 
-                    rs2_rename[next] <= `ROBNOTRENAME; 
-                    rs2_value[next] <= rob_cbd_value;
-                end else begin
-                    rs2_rename[next] <= decoder_rs2_rename;
-                    rs2_value[next] <= decoder_rs2_value;
-                end
-                imms[next] <= decoder_imm;
-                pc[next] <= decoder_pc;
-                op[next] <= decoder_op;
-                next <= next + 1;
-            end
         if(issue_ready[head[3:0]] == `TRUE  && occupied != 0) begin
             case(op[head[3:0]])
                 `SB,`SH,`SW: begin
@@ -254,26 +198,24 @@ always @(posedge clk) begin
                 end
                 `LB,`LBU,`LH,`LHU,`LW: begin
                     if(lsb_read_signal == `FALSE)begin
-                        if((destination_mem_addr[head[3:0]]!=196608 && destination_mem_addr[head[3:0]]!=196612) || ((destination_mem_addr[head[3:0]]==196608||destination_mem_addr[head[3:0]]==196612) && rob_index[head[3:0]] == rob_head && io_buffer_full == `FALSE)) begin
-                            busy[head[3:0]] <= `FALSE;
-                            addr_ready[head[3:0]] <= `FALSE;
-                            lsb_write_signal <= `FALSE;
-                            lsb_read_signal <= `TRUE;
-                            lsb_update_rename <= rob_index[head[3:0]];
-                            to_mem_addr <= destination_mem_addr[head[3:0]];
-                            lsb_store_instr_ready <= `FALSE;
-                            case(op[head[3:0]])
-                                `LB,`LBU: begin 
-                                    requiring_length <= `REQUIRE8; 
-                                end
-                                `LH,`LHU: begin 
-                                    requiring_length <= `REQUIRE16;
-                                end
-                                default: begin
-                                    requiring_length <= `REQUIRE32;
-                                end
-                            endcase
-                        end
+                        busy[head[3:0]] <= `FALSE;
+                        addr_ready[head[3:0]] <= `FALSE;
+                        lsb_write_signal <= `FALSE;
+                        lsb_read_signal <= `TRUE;
+                        lsb_update_rename <= rob_index[head[3:0]];
+                        to_mem_addr <= destination_mem_addr[head[3:0]];
+                        lsb_store_instr_ready <= `FALSE;
+                        case(op[head[3:0]])
+                            `LB,`LBU: begin 
+                                requiring_length <= `REQUIRE8; 
+                            end
+                            `LH,`LHU: begin 
+                                requiring_length <= `REQUIRE16;
+                            end
+                            default: begin
+                                requiring_length <= `REQUIRE32;
+                            end
+                        endcase
                     end
                 end
                 default: begin 
@@ -288,8 +230,8 @@ always @(posedge clk) begin
             lsb_update_rename <= rob_index[head[3:0]];
             busy[head[3:0]] <= `FALSE;
             addr_ready[head[3:0]] <= `FALSE;
+            occupied <= occupied - 1;
             head <= (head + 1) % `ROBNOTRENAME;
-            debug_head_change <= 1;
             lsb_read_signal <= `FALSE;
             lsb_cbd_value <= (op[head[3:0]]==`LHU || op[head[3:0]]==`LBU)? $unsigned(from_mem_data) : $signed(from_mem_data);
             // load_signed <= (op[head[3:0]]==`LHU || op[head[3:0]]==`LBU)? `FALSE : `TRUE;
@@ -298,8 +240,8 @@ always @(posedge clk) begin
         end
         if(mem_store_success == `TRUE) begin
             lsb_write_signal <= `FALSE;
-            debug_head_change <= debug_head_change + 1;
             head <= (head + 1)%`ROBNOTRENAME;
+            occupied <= occupied - 1;
         end
         //calculate the required address
         if(to_calculate != `LSBNOTRENAME) begin
@@ -314,6 +256,65 @@ always @(posedge clk) begin
         
     end
 end
-
+always @(posedge decode_signal)begin
+    // add an entry to lsb
+    //todo 如果lsb满了会不会来不及通知decoder，导致decoder会有信息发不出去？
+    if(rst==`FALSE && rdy==`TRUE && jump_wrong == `FALSE && occupied != 16 && decoder_enable==`TRUE) begin
+            #1 busy[next] <= `TRUE;
+            rob_index[next] <= decoder_rd_rename;
+            store_instr_sent_to_rob[next] <= `FALSE;
+            if(alu_broadcast == `TRUE && alu_update_rename==decoder_rs1_rename)begin 
+                rs1_rename[next] <= `ROBNOTRENAME; 
+                rs1_value[next] <= alu_cbd_value;
+            end else if(rob_broadcast == `TRUE && rob_update_rename==decoder_rs1_rename)begin 
+                rs1_rename[next] <= `ROBNOTRENAME; 
+                rs1_value[next] <= rob_cbd_value;
+            end else begin
+                rs1_rename[next] <= decoder_rs1_rename;
+                rs1_value[next] <= decoder_rs1_value;
+            end
+            if(alu_broadcast == `TRUE && alu_update_rename==decoder_rs2_rename)begin 
+                rs2_rename[next] <= `ROBNOTRENAME; 
+                rs2_value[next] <= alu_cbd_value;
+            end else if(rob_broadcast == `TRUE && rob_update_rename==decoder_rs2_rename)begin 
+                rs2_rename[next] <= `ROBNOTRENAME; 
+                rs2_value[next] <= rob_cbd_value;
+            end else begin
+                rs2_rename[next] <= decoder_rs2_rename;
+                rs2_value[next] <= decoder_rs2_value;
+            end
+            imms[next] <= decoder_imm;
+            pc[next] <= decoder_pc;
+            op[next] <= decoder_op;
+            next <= next + 1;
+            occupied <= occupied + 1;
+        end
+end
+always @(posedge alu_broadcast,rob_broadcast) begin
+    if(jump_wrong==`FALSE && rdy == `TRUE && rst==`FALSE)begin
+    for(j=0;j<`LSBSIZESCALAR;j=j+1)begin
+            if(alu_broadcast== `TRUE) begin
+                if(alu_update_rename==rs1_rename[j]) begin
+                    rs1_value[j] <= alu_cbd_value;
+                    rs1_rename[j] <= `ROBNOTRENAME;
+                end
+                if(alu_update_rename==rs2_rename[j]) begin
+                    rs2_value[j] <= alu_cbd_value;
+                    rs2_rename[j] <= `ROBNOTRENAME;
+                end
+            end
+            if(rob_broadcast==`TRUE) begin
+                if(rob_update_rename==rs1_rename[j]) begin
+                    rs1_value[j] <= rob_cbd_value;
+                    rs1_rename[j] <= `ROBNOTRENAME;
+                end
+                if(rob_update_rename==rs2_rename[j]) begin
+                    rs2_value[j] <= rob_cbd_value;
+                    rs2_rename[j] <= `ROBNOTRENAME;
+                end
+            end
+        end
+    end
+end
 endmodule
 `endif
